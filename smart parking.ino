@@ -3,8 +3,7 @@
 
 void setup() {
   Serial.begin(9600);
-  initUltraSonic();
-  initServo();
+  initGate();
 }
 
 void loop() {

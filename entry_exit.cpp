@@ -6,18 +6,18 @@
 
 Servo gateServo;
 
-void initUltraSonic(){
+void initGate(){
     pinMode(ENTRY_TRIG_PIN, OUTPUT);
     pinMode(ENTRY_ECHO_PIN, INPUT);
 
     pinMode(EXIT_TRIG_PIN, OUTPUT);
     pinMode(EXIT_ECHO_PIN, INPUT);
 
+    pinMode(buzzerPin, OUTPUT);
+
     digitalWrite(ENTRY_TRIG_PIN, LOW);
     digitalWrite(EXIT_TRIG_PIN, LOW);
-}
 
-void initServo(){
     gateServo.attach(SERVO_PIN);
 }
 
@@ -48,10 +48,37 @@ void closeGate(){
     gateServo.write(0);
 }
 
-void isCarEntering(){
+bool isCarEntering(){
     return getDistance(ENTRY_TRIG_PIN, ENTRY_ECHO_PIN) < DETECTION_DISTANCE;
 }
 
-void isCarExiting(){
+bool isCarExiting(){
     return getDistance(EXIT_TRIG_PIN, EXIT_ECHO_PIN) < DETECTION_DISTANCE;
+}
+
+void handleEntry(){
+    bool canEnter = availableSlots - reservedSlots > 0;
+    bool currentEntryState = isCarEntering();
+
+    if (currentEntryState && !prevEntryState) {
+        if (canEnter) {
+            openGate();
+            reservedSlots++;
+        } else {
+            digitalWrite(buzzerPin, HIGH);
+            delay(BUZZER_SOUND_TIME); 
+            digitalWrite(buzzerPin, LOW);
+        }
+    } 
+    prevEntryState = currentEntryState;
+}
+
+void handleExit(){
+    bool currentExitState = isCarExiting();
+
+    if(currentExitState && !prevExitState){
+        openGate();
+    }
+
+    prevExitState = currentExitState;
 }
