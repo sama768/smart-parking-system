@@ -14,6 +14,9 @@ unsigned long gateOpenedAt = 0;
 
 int reservedSlots = 0;
 
+bool isCarAtEntry = false;
+unsigned long entryDetectionStart = 0;
+
 GateMode gateMode = NONE;
 
 void initGate(){
@@ -67,11 +70,27 @@ void closeGate(){
 }
 
 bool isCarEntering(){
-    return getDistance(ENTRY_TRIG_PIN, ENTRY_ECHO_PIN) < DETECTION_DISTANCE;
+    float distance = getDistance(ENTRY_TRIG_PIN, ENTRY_ECHO_PIN);
+
+    if(distance <= DETECTION_DISTANCE){
+        if(entryDetectionStart == 0){
+            entryDetectionStart = millis();
+        }
+
+        if(millis() - entryDetectionStart >= 1000){
+            isCarAtEntry = true;
+        }
+    }
+    else if(distance >= CLEAR_DISTANCE){
+        entryDetectionStart = 0;
+        isCarAtEntry = false;
+    }
+
+    return isCarAtEntry;
 }
 
 bool isCarExiting(){
-    return getDistance(EXIT_TRIG_PIN, EXIT_ECHO_PIN) < DETECTION_DISTANCE;
+    return getDistance(EXIT_TRIG_PIN, EXIT_ECHO_PIN) <= DETECTION_DISTANCE;
 }
 
 void handleEntry(){
@@ -80,6 +99,7 @@ void handleEntry(){
 
     if(currentEntryState && !prevEntryState){
         if(canEnter){
+            Serial.print(currentEntryState);
             openGate();
             reserveSlot();
             gateMode = ENTRY;
@@ -123,12 +143,9 @@ void releaseReservation(){
 
 void updateGate(){
     if(isGateOpen && millis() - gateOpenedAt >= ENTRY_TIMEOUT){
-
         if(gateMode == ENTRY){
             releaseReservation();
-            prevEntryState = false;
         }
-
         closeGate();
     }
 }

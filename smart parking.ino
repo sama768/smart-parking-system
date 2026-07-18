@@ -5,7 +5,6 @@
 
 int availableSlots = 3;
 
-
 void setup() {
   Serial.begin(9600);
   initGate();
@@ -13,7 +12,7 @@ void setup() {
 }
 
 void loop() {
-  if(isCarExiting()){
-    handleExit();
-  }
+  handleEntry();
+  handleExit();
+  updateGate();
 }
