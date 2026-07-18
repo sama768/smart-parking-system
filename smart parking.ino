@@ -1,4 +1,4 @@
-#include "entry_exit.h"
+#include "gate.h"
 #include "config.h"
 
 void setup() {

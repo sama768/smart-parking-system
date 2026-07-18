@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Servo.h>
 
-#include "entry_exit.h"
+#include "gate.h"
 #include "config.h"
 
 Servo gateServo;
