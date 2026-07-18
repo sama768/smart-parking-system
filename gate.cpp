@@ -8,8 +8,13 @@ Servo gateServo;
 
 bool prevEntryState = false;
 bool prevExitState = false;
+
+bool isGateOpen = false;
+unsigned long gateOpenedAt = 0;
+
 int reservedSlots = 0;
-int availableSlots = 3;
+
+GateMode gateMode = NONE;
 
 void initGate(){
     pinMode(ENTRY_TRIG_PIN, OUTPUT);
@@ -42,15 +47,23 @@ float getDistance(int trig_pin, int echo_pin){
 
     float distance = float(duration) * 0.034 / 2; 
 
+    if(distance < 2 || distance > 400){
+        return 999.0;
+    }
+
     return distance;
 }
 
 void openGate(){
     gateServo.write(90);
+    isGateOpen = true;
+    gateOpenedAt = millis();
 }
 
 void closeGate(){
     gateServo.write(0);
+    isGateOpen = false;
+    gateMode = NONE;
 }
 
 bool isCarEntering(){
@@ -65,16 +78,19 @@ void handleEntry(){
     bool canEnter = availableSlots - reservedSlots > 0;
     bool currentEntryState = isCarEntering();
 
-    if (currentEntryState && !prevEntryState) {
-        if (canEnter) {
+    if(currentEntryState && !prevEntryState){
+        if(canEnter){
             openGate();
-            reserveSolt();
-        } else {
-            digitalWrite(BUZZER_PIN, HIGH);
-            delay(BUZZER_SOUND_TIME); 
-            digitalWrite(BUZZER_PIN, LOW);
+            reserveSlot();
+            gateMode = ENTRY;
+        } else{
+            tone(BUZZER_PIN, 1000, BUZZER_SOUND_TIME);
         }
     } 
+    if(!currentEntryState && prevEntryState){
+        closeGate();
+    }
+
     prevEntryState = currentEntryState;
 }
 
@@ -83,17 +99,36 @@ void handleExit(){
 
     if(currentExitState && !prevExitState){
         openGate();
+        gateMode = EXIT;
+    }
+    
+    if(!currentExitState && prevExitState){
+        closeGate();
     }
 
     prevExitState = currentExitState;
 }
 
-void reserveSolt(){
-  reservedSlots++;
+void reserveSlot(){
+    if(reservedSlots < availableSlots){
+        reservedSlots++;
+    }
 }
 
 void releaseReservation(){
-  if (reservedSlots > 0){
-    reservedSlots--;
-  }
+    if(reservedSlots > 0){
+        reservedSlots--;
+    }
+}
+
+void updateGate(){
+    if(isGateOpen && millis() - gateOpenedAt >= ENTRY_TIMEOUT){
+
+        if(gateMode == ENTRY){
+            releaseReservation();
+            prevEntryState = false;
+        }
+
+        closeGate();
+    }
 }
