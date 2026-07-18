@@ -4,8 +4,8 @@
 const int DETECTION_DISTANCE = 15;
 const int BUZZER_SOUND_TIME = 1000;
 
-bool prevEntryState = false;
-bool prevExitState = false;
+extern bool prevEntryState;
+extern bool prevExitState;
 
 void initGate();
 
@@ -18,5 +18,8 @@ void closeGate();
 
 void handleEntry();
 void handleExit();
+
+void reserveSolt();
+void releaseReservation();
 
 #endif

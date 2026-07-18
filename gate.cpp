@@ -6,6 +6,11 @@
 
 Servo gateServo;
 
+bool prevEntryState = false;
+bool prevExitState = false;
+int reservedSlots = 0;
+int availableSlots = 3;
+
 void initGate(){
     pinMode(ENTRY_TRIG_PIN, OUTPUT);
     pinMode(ENTRY_ECHO_PIN, INPUT);
@@ -13,7 +18,7 @@ void initGate(){
     pinMode(EXIT_TRIG_PIN, OUTPUT);
     pinMode(EXIT_ECHO_PIN, INPUT);
 
-    pinMode(buzzerPin, OUTPUT);
+    pinMode(BUZZER_PIN, OUTPUT);
 
     digitalWrite(ENTRY_TRIG_PIN, LOW);
     digitalWrite(EXIT_TRIG_PIN, LOW);
@@ -63,11 +68,11 @@ void handleEntry(){
     if (currentEntryState && !prevEntryState) {
         if (canEnter) {
             openGate();
-            reservedSlots++;
+            reserveSolt();
         } else {
-            digitalWrite(buzzerPin, HIGH);
+            digitalWrite(BUZZER_PIN, HIGH);
             delay(BUZZER_SOUND_TIME); 
-            digitalWrite(buzzerPin, LOW);
+            digitalWrite(BUZZER_PIN, LOW);
         }
     } 
     prevEntryState = currentEntryState;
@@ -81,4 +86,14 @@ void handleExit(){
     }
 
     prevExitState = currentExitState;
+}
+
+void reserveSolt(){
+  reservedSlots++;
+}
+
+void releaseReservation(){
+  if (reservedSlots > 0){
+    reservedSlots--;
+  }
 }

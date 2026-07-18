@@ -12,7 +12,7 @@
 #define SERVO_PIN 3
 
 // reservation and availability variables
-int reservedSlots = 0;
-int availableSlots = 3;
+extern int reservedSlots;
+extern int availableSlots;
 
 #endif
