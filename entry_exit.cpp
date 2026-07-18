@@ -1,6 +1,10 @@
 #include <Arduino.h>
-#include "sensors.h"
+#include <Servo.h>
+
+#include "entry_exit.h"
 #include "config.h"
+
+Servo gateServo;
 
 void initUltraSonic(){
     pinMode(ENTRY_TRIG_PIN, OUTPUT);
@@ -11,6 +15,10 @@ void initUltraSonic(){
 
     digitalWrite(ENTRY_TRIG_PIN, LOW);
     digitalWrite(EXIT_TRIG_PIN, LOW);
+}
+
+void initServo(){
+  gateServo.attach(SERVO_PIN);
 }
 
 float getDistance(int trig_pin, int echo_pin){
@@ -25,4 +33,12 @@ float getDistance(int trig_pin, int echo_pin){
   float distance = float(duration) * 0.034 / 2; 
 
   return distance;
+}
+
+void openGate(){
+  gateServo.write(90);
+}
+
+void closeGate(){
+  gateServo.write(0);
 }

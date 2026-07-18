@@ -9,5 +9,6 @@
 #define EXIT_TRIG_PIN 5
 #define EXIT_ECHO_PIN 4
 
+#define SERVO_PIN 3
 
 #endif
