@@ -283,6 +283,7 @@ Commented Code
 
 Meaningful Commits
 
+Each member works on a dedicated branch
 
 # Project Architecture
 
