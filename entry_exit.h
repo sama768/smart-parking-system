@@ -3,8 +3,8 @@
 
 void initUltraSonic();
 float getDistance(int trig_pin, int echo_pin);
-float getEntryDistance();
-float getExitDistance();
+bool isCarEntering();
+bool isCarExiting();
 
 void initServo();
 void openGate();

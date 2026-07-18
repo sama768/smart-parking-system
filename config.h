@@ -11,4 +11,6 @@
 
 #define SERVO_PIN 3
 
+const int DETECTION_DISTANCE = 20;
+
 #endif
