@@ -1,10 +1,11 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
-void initSensors();
+void initUltraSonic();
+
 float getDistance(int trig_pin, int echo_pin);
-float getEntryDistance();
-float getExitDistance();
+void handleEntry();
+void handleExit();
 
 
 #endif

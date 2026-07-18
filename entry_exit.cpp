@@ -2,7 +2,7 @@
 #include "sensors.h"
 #include "config.h"
 
-void initSensors(){
+void initUltraSonic(){
     pinMode(ENTRY_TRIG_PIN, OUTPUT);
     pinMode(ENTRY_ECHO_PIN, INPUT);
 
@@ -26,12 +26,3 @@ float getDistance(int trig_pin, int echo_pin){
 
   return distance;
 }
-
-float getEntryDistance(){
-  return getDistance(ENTRY_TRIG_PIN, ENTRY_ECHO_PIN);
-}
-
-float getExitDistance(){
-  return getDistance(EXIT_TRIG_PIN, EXIT_ECHO_PIN);
-}
-
