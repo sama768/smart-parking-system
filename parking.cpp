@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include <Adafruit_LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
 
 #include "parking.h"
 #include "config.h"
 
-Adafruit_LiquidCrystal lcd(0);
+LiquidCrystal_I2C lcd(0x27, 16, 2); 
 
 extern int reservedSlots;
 extern int availableSlots;
