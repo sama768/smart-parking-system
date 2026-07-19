@@ -18,4 +18,5 @@ void setup() {
 void loop() {
   updateParking();
   updateGateSystem();
+  printState();
 }

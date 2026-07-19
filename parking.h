@@ -5,4 +5,6 @@ void initParking();
 
 void updateParking();
 
+void printState();
+
 #endif

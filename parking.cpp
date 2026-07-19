@@ -10,6 +10,8 @@ extern int reservedSlots;
 extern int availableSlots;
 
 const int TOTAL_SLOTS = 3;
+unsigned long lastPrint = 0;
+
 
 const int slotPins[TOTAL_SLOTS] =
 {
@@ -101,29 +103,36 @@ void updateParking()
         }
     }
 
-    // Serial Monitor
-
-    Serial.print("Available: ");
-    Serial.println(availableSlots);
-
-    for(int i = 0; i < TOTAL_SLOTS; i++)
-    {
-        Serial.print("Slot ");
-        Serial.print(i + 1);
-        Serial.print(": ");
-
-        if(currentState[i])
-            Serial.println("Occupied");
-        else
-            Serial.println("Empty");
-    }
-
-    Serial.println("----------------");
-
-    // save current state
-
     for(int i = 0; i < TOTAL_SLOTS; i++)
     {
         lastState[i] = currentState[i];
     }
 }
+
+
+void printState(){
+  if(lastPrint == 0){
+    lastPrint = millis();
+  }
+  if (millis() - lastPrint >= 5000){
+    lastPrint = millis(); 
+
+    Serial.println("----------------");
+    Serial.print("Available: ");
+    Serial.println(availableSlots);
+    Serial.println("----------------");
+
+    for(int i = 0; i < TOTAL_SLOTS; i++)
+      {
+          Serial.print("Slot ");
+          Serial.print(i + 1);
+          Serial.print(": ");
+
+          if(currentState[i])
+              Serial.println("Occupied");
+          else
+              Serial.println("Empty");
+      }
+    }
+}
+
