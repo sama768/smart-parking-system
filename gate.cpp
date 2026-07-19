@@ -12,7 +12,6 @@ bool prevExitState = false;
 bool isGateOpen = false;
 unsigned long gateOpenedAt = 0;
 
-int reservedSlots = 0;
 
 bool isCarAtEntry = false;
 bool isCarAtExit = false;
@@ -20,6 +19,9 @@ unsigned long entryDetectionStart = 0;
 unsigned long exitDetectionStart = 0;
 
 GateMode gateMode = NONE;
+
+extern int reservedSlots; // new 
+extern int availableSlots;
 
 void initGate(){
     pinMode(ENTRY_TRIG_PIN, OUTPUT);
@@ -34,6 +36,8 @@ void initGate(){
     digitalWrite(EXIT_TRIG_PIN, LOW);
 
     gateServo.attach(SERVO_PIN);
+
+    closeGate(); //new 
 }
 
 float getDistance(int trig_pin, int echo_pin){
@@ -59,7 +63,7 @@ float getDistance(int trig_pin, int echo_pin){
     return distance;
 }
 
-void openGate(){
+void openGate(){    
     gateServo.write(90);
     isGateOpen = true;
     gateOpenedAt = millis();
@@ -75,12 +79,12 @@ void closeGate(){
 bool isCarEntering(){
     float distance = getDistance(ENTRY_TRIG_PIN, ENTRY_ECHO_PIN);
 
-    if(distance <= DETECTION_DISTANCE){
+    if(distance <= DETECTION_DISTANCE){      // hysteresis
         if(entryDetectionStart == 0){
             entryDetectionStart = millis();
         }
 
-        if(millis() - entryDetectionStart >= 1000){
+        if(millis() - entryDetectionStart >= DETECTION_CONFIRM){  // new 
             isCarAtEntry = true;
         }
     }
@@ -101,7 +105,7 @@ bool isCarExiting(){
             exitDetectionStart = millis();
         }
 
-        if(millis() - exitDetectionStart >= 1000){
+        if(millis() - exitDetectionStart >= DETECTION_CONFIRM){  // new 
             isCarAtExit = true;
         }
     }
@@ -135,7 +139,7 @@ void updateGateSystem() {
     switch(gateMode){
         case NONE:
             if(entryRising){
-                if(availableSlots - reservedSlots > 0) {
+                if(availableSlots > 0) {    // new 
                     openGate();
                     reserveSlot();
                     gateMode = ENTRY;
@@ -151,14 +155,14 @@ void updateGateSystem() {
         case ENTRY:
             if(exitRising){
                 closeGate();
-                gateMode = NONE;
+                
             }
             break;
 
         case EXIT:
             if(entryRising){
                 closeGate();
-                gateMode = NONE;
+               
             }
             break;
     }

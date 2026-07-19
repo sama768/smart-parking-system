@@ -17,6 +17,7 @@ This project implements a **Smart Parking System** using Arduino. The system aut
 * Red LED indicates that the parking lot is full.
 * Buzzer alerts when a vehicle attempts to enter while the parking lot is full.
 * Reservation mechanism prevents multiple vehicles from taking the same parking space before parking.
+* Invalid ultrasonic readings are filtered for reliable vehicle detection.
 
 ---
 
@@ -184,6 +185,7 @@ Where:
 ```cpp
 #include <Servo.h>
 #include <Adafruit_LiquidCrystal.h>
+#include <Arduino.h>
 ```
 
 ---

@@ -17,7 +17,7 @@ enum GateMode{
 
 void initGate();
 
-float getDistance(int trig_pin, int echo_pin);
+float getDistance(int trig_pin, int echo_pin); //
 bool isCarEntering();
 bool isCarExiting();
 
