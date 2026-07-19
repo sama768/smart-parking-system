@@ -12,7 +12,5 @@ void setup() {
 }
 
 void loop() {
-  handleEntry();
-  handleExit();
-  updateGate();
+  updateGateSystem();
 }

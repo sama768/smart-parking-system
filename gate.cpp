@@ -15,7 +15,9 @@ unsigned long gateOpenedAt = 0;
 int reservedSlots = 0;
 
 bool isCarAtEntry = false;
+bool isCarAtExit = false;
 unsigned long entryDetectionStart = 0;
+unsigned long exitDetectionStart = 0;
 
 GateMode gateMode = NONE;
 
@@ -69,6 +71,7 @@ void closeGate(){
     gateMode = NONE;
 }
 
+
 bool isCarEntering(){
     float distance = getDistance(ENTRY_TRIG_PIN, ENTRY_ECHO_PIN);
 
@@ -89,44 +92,25 @@ bool isCarEntering(){
     return isCarAtEntry;
 }
 
+
 bool isCarExiting(){
-    return getDistance(EXIT_TRIG_PIN, EXIT_ECHO_PIN) <= DETECTION_DISTANCE;
-}
+    float distance = getDistance(EXIT_TRIG_PIN, EXIT_ECHO_PIN);
 
-void handleEntry(){
-    bool canEnter = availableSlots - reservedSlots > 0;
-    bool currentEntryState = isCarEntering();
-
-    if(currentEntryState && !prevEntryState){
-        if(canEnter){
-            Serial.print(currentEntryState);
-            openGate();
-            reserveSlot();
-            gateMode = ENTRY;
-        } else{
-            tone(BUZZER_PIN, 1000, BUZZER_SOUND_TIME);
+    if(distance <= DETECTION_DISTANCE){
+        if(exitDetectionStart == 0){
+            exitDetectionStart = millis();
         }
-    } 
-    if(!currentEntryState && prevEntryState){
-        closeGate();
+
+        if(millis() - exitDetectionStart >= 1000){
+            isCarAtExit = true;
+        }
+    }
+    else if(distance >= CLEAR_DISTANCE){
+        exitDetectionStart = 0;
+        isCarAtExit = false;
     }
 
-    prevEntryState = currentEntryState;
-}
-
-void handleExit(){
-    bool currentExitState = isCarExiting();
-
-    if(currentExitState && !prevExitState){
-        openGate();
-        gateMode = EXIT;
-    }
-    
-    if(!currentExitState && prevExitState){
-        closeGate();
-    }
-
-    prevExitState = currentExitState;
+    return isCarAtExit;
 }
 
 void reserveSlot(){
@@ -141,11 +125,51 @@ void releaseReservation(){
     }
 }
 
-void updateGate(){
-    if(isGateOpen && millis() - gateOpenedAt >= ENTRY_TIMEOUT){
+void updateGateSystem() {
+    bool entry = isCarEntering();
+    bool exit  = isCarExiting();
+
+    bool entryRising = entry && !prevEntryState;
+    bool exitRising  = exit && !prevExitState;
+
+    switch(gateMode){
+        case NONE:
+            if(entryRising){
+                if(availableSlots - reservedSlots > 0) {
+                    openGate();
+                    reserveSlot();
+                    gateMode = ENTRY;
+                } else{
+                    tone(BUZZER_PIN, 1000, BUZZER_SOUND_TIME);
+                }
+            } else if(exitRising){
+                openGate();
+                gateMode = EXIT;
+            }
+            break;
+
+        case ENTRY:
+            if(exitRising){
+                closeGate();
+                gateMode = NONE;
+            }
+            break;
+
+        case EXIT:
+            if(entryRising){
+                closeGate();
+                gateMode = NONE;
+            }
+            break;
+    }
+
+    if(isGateOpen && millis() - gateOpenedAt >= GATE_TIMEOUT){
         if(gateMode == ENTRY){
             releaseReservation();
         }
         closeGate();
     }
+
+    prevEntryState = entry;
+    prevExitState = exit;
 }

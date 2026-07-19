@@ -4,33 +4,146 @@
 
 The Gate Module is responsible for:
 
-- Detecting vehicle entry
-- Detecting vehicle exit
-- Opening and closing the gate
-- Managing parking reservations
-- Rejecting vehicles when parking is full
+- Vehicle detection using ultrasonic sensors
+- Gate control using a servo motor
+- Entry/Exit direction detection
+- Parking reservation management
+- Full parking rejection and buzzer alerts
+- Gate timeout handling
 
-The Parking Module should NOT directly control the gate or reservation logic.
+The module owns all gate-related logic.
+
+---
+
+# Architecture
+
+The system uses two ultrasonic sensors mounted on opposite sides of the gate.
+
+```text
+Outside
+   |
+   |  Entry Sensor
+   V
++--------+
+|  Gate  |
++--------+
+   ^
+   |  Exit Sensor
+   |
+Parking Area
+```
+
+---
+
+# Vehicle Entry
+
+A vehicle is considered entering when:
+
+```text
+Entry Sensor
+        ↓
+Gate Opens
+        ↓
+Reservation Created
+        ↓
+Exit Sensor
+        ↓
+Gate Closes
+```
+
+Sequence:
+
+```text
+ENTRY → EXIT
+```
+
+---
+
+# Vehicle Exit
+
+A vehicle is considered exiting when:
+
+```text
+Exit Sensor
+        ↓
+Gate Opens
+        ↓
+Entry Sensor
+        ↓
+Gate Closes
+```
+
+Sequence:
+
+```text
+EXIT → ENTRY
+```
+
+---
+
+# State Machine
+
+The gate operates using a state machine.
+
+## NONE
+
+Idle state.
+
+The gate is waiting for a vehicle.
+
+```cpp
+NONE
+```
+
+---
+
+## ENTRY
+
+An entry operation is in progress.
+
+Expected sequence:
+
+```text
+ENTRY → EXIT
+```
+
+The gate is waiting for the vehicle to cross.
+
+```cpp
+ENTRY
+```
+
+---
+
+## EXIT
+
+An exit operation is in progress.
+
+Expected sequence:
+
+```text
+EXIT → ENTRY
+```
+
+The gate is waiting for the vehicle to cross.
+
+```cpp
+EXIT
+```
 
 ---
 
 # Public API
 
-The following functions are intended to be used by other modules.
-
----
-
-## Initialization
-
-### initGate()
+## initGate()
 
 Initializes:
 
+- Servo
 - Ultrasonic sensors
-- Servo motor
 - Buzzer
 
-Must be called once during setup.
+Call once during setup.
 
 ```cpp
 initGate();
@@ -38,73 +151,29 @@ initGate();
 
 ---
 
-## Main Update Loop
+## updateGateSystem()
 
-### handleEntry()
+Main gate update function.
 
-Processes vehicle entry events.
+Handles:
 
-Should be called continuously from loop().
+- Entry detection
+- Exit detection
+- Reservation logic
+- Gate control
+- Timeouts
 
-```cpp
-handleEntry();
-```
-
----
-
-### handleExit()
-
-Processes vehicle exit events.
-
-Should be called continuously from loop().
+Must be called continuously.
 
 ```cpp
-handleExit();
+updateGateSystem();
 ```
-
----
-
-### updateGate()
-
-Handles gate timeout logic.
-
-Should be called continuously from loop().
-
-```cpp
-updateGate();
-```
-
----
-
-## Reservation Functions
-
-### reserveSlot()
-
-Creates a temporary reservation.
-
-Normally called internally by the Gate Module.
-
-Do NOT call from other modules.
-
----
-
-### releaseReservation()
-
-Releases a reservation after a vehicle occupies a parking space.
-
-This function SHOULD be called by the Parking Module when:
-
-```text
-Empty -> Occupied
-```
-
-is detected.
 
 Example:
 
 ```cpp
-if(slotChangedFromEmptyToOccupied){
-    releaseReservation();
+void loop() {
+    updateGateSystem();
 }
 ```
 
@@ -116,15 +185,15 @@ if(slotChangedFromEmptyToOccupied){
 
 Owned by Parking Module.
 
-Represents physically available parking spaces.
+Represents physically empty parking spaces.
 
 Example:
 
 ```cpp
-availableSlots = 3;
+availableSlots = 2;
 ```
 
-The Gate Module reads this value to decide whether entry is allowed.
+The Gate Module reads this value before allowing entry.
 
 ---
 
@@ -132,7 +201,7 @@ The Gate Module reads this value to decide whether entry is allowed.
 
 Owned by Gate Module.
 
-Represents vehicles that entered but have not parked yet.
+Represents vehicles that entered the gate but have not yet occupied a parking slot.
 
 Example:
 
@@ -140,15 +209,61 @@ Example:
 reservedSlots = 1;
 ```
 
-The Parking Module may read this value for display purposes.
+Other modules may read this value.
 
-Do NOT modify directly.
+Other modules must not modify this value directly.
+
+---
+
+# Reservation Logic
+
+## Creating a Reservation
+
+When:
+
+```text
+ENTRY detected
+```
+
+and parking is available:
+
+```cpp
+reserveSlot();
+```
+
+is called automatically.
+
+---
+
+## Releasing a Reservation
+
+When the Parking Module detects:
+
+```text
+Empty → Occupied
+```
+
+it must call:
+
+```cpp
+releaseReservation();
+```
+
+Example:
+
+```cpp
+if(slotBecameOccupied){
+    releaseReservation();
+}
+```
+
+This indicates that the vehicle successfully parked.
 
 ---
 
 # Available Space Formula
 
-The correct number of free spaces is:
+The number shown to the user should be:
 
 ```cpp
 availableSlots - reservedSlots
@@ -160,83 +275,149 @@ Example:
 availableSlots = 3
 reservedSlots = 1
 
-Displayed Free Spaces = 2
+Free Spaces = 2
 ```
 
-LCD and LEDs should use this value.
+LCD and LED logic should use this value.
 
 ---
 
-# Slot Event Requirements
+# Sensor Filtering
 
-## Empty -> Occupied
+The module implements:
 
-Parking Module must:
+- Distance validation
+- Hysteresis
+- Detection confirmation
 
-```cpp
-releaseReservation();
-```
-
-Reason:
-
-The vehicle has successfully parked.
+to improve reliability.
 
 ---
 
-## Occupied -> Empty
+## Invalid Readings
 
-Parking Module must:
+Ignored when:
 
-```cpp
-availableSlots++;
+```text
+distance < 2 cm
+distance > 400 cm
+pulseIn timeout
 ```
 
-Reason:
+These readings are treated as:
 
-A parking space has become available.
+```cpp
+999.0
+```
 
 ---
 
-# What Other Modules Should NOT Do
+## Hysteresis
 
-Do NOT:
-
-```cpp
-reservedSlots++;
-reservedSlots--;
-```
-
-Use:
+Detection threshold:
 
 ```cpp
-releaseReservation();
+DETECTION_DISTANCE
 ```
 
-instead.
-
-Do NOT:
+Clear threshold:
 
 ```cpp
-openGate();
-closeGate();
+CLEAR_DISTANCE
 ```
 
-from outside the Gate Module.
-
-Vehicle movement should be handled only by the Gate Module.
+This prevents sensor flickering near the threshold.
 
 ---
 
-# Required Main Loop
+## Confirmation Delay
+
+A vehicle must remain detected for approximately:
+
+```text
+1000 ms
+```
+
+before being considered present.
+
+This reduces false triggers caused by noise.
+
+---
+
+# Parking Full Behavior
+
+If:
 
 ```cpp
-void loop() {
-    handleEntry();
-    handleExit();
-    updateGate();
-
-    updateParkingSlots();
-    updateLCD();
-    updateLEDs();
-}
+availableSlots - reservedSlots <= 0
 ```
+
+then:
+
+```text
+Gate remains closed
+Buzzer sounds
+No reservation created
+```
+
+---
+
+# Timeout Handling
+
+If a gate operation is not completed within:
+
+```cpp
+ENTRY_TIMEOUT
+```
+
+the gate closes automatically.
+
+---
+
+## Entry Timeout
+
+Sequence:
+
+```text
+ENTRY detected
+        ↓
+Reservation created
+        ↓
+Vehicle never crosses
+        ↓
+Timeout
+        ↓
+Reservation released
+        ↓
+Gate closes
+```
+
+---
+
+## Exit Timeout
+
+Sequence:
+
+```text
+EXIT detected
+        ↓
+Vehicle never crosses
+        ↓
+Timeout
+        ↓
+Gate closes
+```
+
+No reservation changes occur.
+
+---
+
+# Integration Requirements
+
+The Parking Module must:
+
+- Maintain `availableSlots`
+- Call `releaseReservation()` when a slot changes from Empty → Occupied
+- Use `availableSlots - reservedSlots` when displaying free spaces
+
+The Gate Module handles everything else.
